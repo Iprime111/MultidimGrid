@@ -48,5 +48,27 @@ constexpr std::size_t countEqualType(FirstElem&& firstElem, OtherElems&&... othe
     }
 }
 
+template<std::size_t Index = 0, typename FirstElem, typename... OtherElems, typename ReturnType>
+constexpr ReturnType&& getElemByIndex(FirstElem&& firstElem, OtherElems&&... other) {
+    if (Index == 0) {
+        return std::forward<FirstElem>(firstElem);
+    }
+
+    return getElemByIndex<Index - 1>(std::forward<OtherElems>(other)...);
+}
+
+template<typename T, typename = void>
+struct StoredTypeReferenceOrVoid {
+    using Type = void;
+};
+
+template<typename T>
+struct StoredTypeReferenceOrVoid<T, std::void_t<typename T::StoredTypeReference>> {
+    using Type = typename T::StoredTypeReference;
+};
+
+template<typename T>
+using StoredTypeReferenceType = typename StoredTypeReferenceOrVoid<T>::Type;
+
 } // namespace utils
 } // namespace grid

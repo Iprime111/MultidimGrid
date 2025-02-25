@@ -4,9 +4,11 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
-#include <functional>
 #include <initializer_list>
+#include <iostream>
 #include <iterator>
+#include <limits>
+#include <ostream>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -31,6 +33,12 @@ concept Size = std::convertible_to<T, std::size_t>;
 template<typename T>
 concept Dimension = Size<T> || std::same_as<T, NoDimensionType>;
 
+template<typename Fn, typename... Args>
+concept TraversePredicate = std::predicate<Fn, Args...>;
+
+template<typename Fn, typename... Args>
+concept ReduceCallable = std::regular_invocable<Fn, Args...>;
+
 template<typename T, std::size_t Dimensionality>
 class Grid {
     template<typename U, std::size_t OtherDimensionality>
@@ -52,7 +60,11 @@ class Grid {
     using ConstReference = InnerContainerType::const_reference;
     using Reference = InnerContainerType::reference;
 
+   using StoredTypeReference = std::conditional_t<(Dimensionality > 1), utils::StoredTypeReferenceType<ValueType>, Reference>;
+   using StoredTypeConstReference = std::add_lvalue_reference_t<std::add_const_t<std::remove_reference_t<StoredTypeReference>>>;
+
     // For compatibility with stl functions
+    using value_type = ValueType;
     using iterator = Iterator;
     using const_iterator = ConstIterator;
     using reference = Reference;
@@ -120,7 +132,7 @@ class Grid {
     } 
 
     template<Dimension... Dimensions>
-    bool traverse(const std::function<bool(T&, const std::array<std::size_t, Dimensionality>&)>& predicate, 
+    bool traverse(const TraversePredicate<StoredTypeReference, const std::array<std::size_t, Dimensionality>&> auto& predicate,
                   Dimensions... dimensions) {
 
         static_assert(sizeof...(dimensions) == Dimensionality, "Invalid count of grid dimensions");
@@ -130,15 +142,31 @@ class Grid {
     }
 
     template<Dimension... Dimensions>
-    void reduce(const std::function<void(T&, const std::array<std::size_t, Dimensionality>&)>& predicate, 
+    bool traverse(const TraversePredicate<StoredTypeConstReference, const std::array<std::size_t, Dimensionality>&> auto& predicate,
+                  Dimensions... dimensions) const {
+
+        static_assert(sizeof...(dimensions) == Dimensionality, "Invalid count of grid dimensions");
+        return const_cast<std::remove_const_t<Grid<T, Dimensionality> *>>(this)->traverse(predicate, dimensions...);
+    }
+
+    template<Dimension... Dimensions>
+    void reduce(const ReduceCallable<StoredTypeReference, const std::array<std::size_t, Dimensionality>&> auto& callable,
                 Dimensions... dimensions) {
         
         static_assert(sizeof...(dimensions) == Dimensionality, "Invalid count of grid dimensions");
 
-        traverse([&predicate](T& value, auto& coords) { 
-            predicate(value, coords);
+        traverse([&callable](T& value, auto& coords) { 
+            callable(value, coords);
             return false;
         }, dimensions...);
+    }
+
+    template<Dimension... Dimensions>
+    void reduce(const ReduceCallable<StoredTypeConstReference, const std::array<std::size_t, Dimensionality>&> auto& callable,
+                Dimensions... dimensions) const {
+
+        static_assert(sizeof...(dimensions) == Dimensionality, "Invalid count of grid dimensions");
+        const_cast<std::remove_const_t<Grid<T, Dimensionality> *>>(this)->reduce(callable, dimensions...);
     }
 
     std::size_t size(std::size_t dimension) const {
@@ -162,7 +190,7 @@ class Grid {
   private: 
     template<Dimension... Dimensions, std::size_t CoordinatesCount>
     bool traverseImpl(std::array<std::size_t, CoordinatesCount>& coords, 
-                      const std::function<bool(T&, const std::array<std::size_t, CoordinatesCount>&)>& predicate, 
+                      const TraversePredicate<StoredTypeReference, const std::array<std::size_t, CoordinatesCount>&> auto& predicate, 
                       Dimensions... dimensions) {
 
         constexpr bool isNoDimension = utils::CompareFirstElemType<NoDimensionType>(dimensions...);
@@ -202,6 +230,39 @@ class Grid {
             }(dimensions...);
         }
     }
-
 };
+
+template<typename T, std::size_t Dimensionality, Dimension... Dimensions, std::size_t... Is>
+void print2dSubgridImpl(const Grid<T, Dimensionality>& grid, std::index_sequence<Is...> dimIndices, Dimensions... dimensions) {
+    static_assert(utils::countEqualType<NoDimensionType>(dimensions...) == 2, "Invalid subgrid dimensions count");
+
+    auto firstDim{std::numeric_limits<std::size_t>::max()};
+    auto secondDim{std::numeric_limits<std::size_t>::max()};
+
+    (([&firstDim, &secondDim](const auto& dim, const std::size_t index) {
+        if constexpr (std::is_same_v<NoDimensionType, std::remove_cvref_t<decltype(dim)>>) {
+            if (firstDim == std::numeric_limits<std::size_t>::max()) {
+                firstDim = index;
+            } else {
+                secondDim = index;
+            }
+        }
+    }(dimensions, Is)), ...);
+
+    auto secondDimSize = grid.size(secondDim);
+
+    grid.reduce([secondDim, secondDimSize](const auto& val, const auto& coords) {
+        std::cout << val << " "; 
+
+        if (coords[secondDim] == secondDimSize - 1) {
+            std::cout << std::endl;
+        }
+    }, dimensions...);
+}
+
+template<typename T, std::size_t Dimensionality, Dimension... Dimensions>
+void print2dSubgrid(const Grid<T, Dimensionality>& grid, Dimensions... dimensions) {
+    print2dSubgridImpl(grid, std::make_index_sequence<sizeof...(Dimensions)>{}, dimensions...);
+}
+
 } // namespace grid

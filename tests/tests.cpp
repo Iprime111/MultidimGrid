@@ -219,3 +219,13 @@ TEST(GridTests, AccessOperatorTest) {
     EXPECT_EQ(stringGrid[1][1], "eee");
     EXPECT_EQ(newVal, "ddd");
 }
+
+TEST(GridTests, PrintGridTest) {
+
+    grid::Grid<int, 3> grid{{{1, 2}, {3, 4}, {5, 6}, {7, 8}},
+                            {{1, 2}, {3, 4}, {5, 6}, {7, 8}},
+                            {{1, 2}, {3, 4}, {5, 6}, {7, 8}},
+                            {{1, 2}, {3, 4}, {5, 6}, {7, 8}}};
+
+    grid::print2dSubgrid(grid, grid::NoDimension, grid::NoDimension, 0);
+}
