@@ -146,7 +146,7 @@ class Grid {
                   Dimensions... dimensions) const {
 
         static_assert(sizeof...(dimensions) == Dimensionality, "Invalid count of grid dimensions");
-        return const_cast<std::remove_const_t<Grid<T, Dimensionality> *>>(this)->traverse(predicate, dimensions...);
+        return const_cast<Grid<T, Dimensionality> *>(this)->traverse(predicate, dimensions...);
     }
 
     template<Dimension... Dimensions>
@@ -166,7 +166,7 @@ class Grid {
                 Dimensions... dimensions) const {
 
         static_assert(sizeof...(dimensions) == Dimensionality, "Invalid count of grid dimensions");
-        const_cast<std::remove_const_t<Grid<T, Dimensionality> *>>(this)->reduce(callable, dimensions...);
+        const_cast<Grid<T, Dimensionality> *>(this)->reduce(callable, dimensions...);
     }
 
     std::size_t size(std::size_t dimension) const {
