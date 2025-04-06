@@ -239,7 +239,7 @@ class Grid;
 
 ---
 
-### **Grid Namespac **
+### **Grid Namespace**
 
 #### **1. Printing Utilities**
 
