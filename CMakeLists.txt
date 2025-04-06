@@ -6,9 +6,6 @@ enable_testing()
 
 include(cmake/CPM.cmake)
 
-# Add needed cpm packages
-CpmAddPackage("gh:fmtlib/fmt#11.1.1")
-
 CPMAddPackage(
   NAME googletest
   GITHUB_REPOSITORY google/googletest
@@ -26,13 +23,13 @@ target_compile_features(multidim-grid-lib INTERFACE cxx_std_20)
 
 add_executable(multidim-grid-tests)
 
-# TODO debug and release compile options
+# TODO test debug and release compile options
 
 target_compile_options(multidim-grid-tests PRIVATE -Wall)
 
 # Link libs
 
-target_link_libraries(multidim-grid-tests PRIVATE multidim-grid-lib GTest::gtest_main fmt::fmt)
+target_link_libraries(multidim-grid-tests PRIVATE multidim-grid-lib GTest::gtest_main)
 
 add_subdirectory(tests)
 

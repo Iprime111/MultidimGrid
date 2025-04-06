@@ -222,10 +222,17 @@ TEST(GridTests, AccessOperatorTest) {
 
 TEST(GridTests, PrintGridTest) {
 
-    grid::Grid<int, 3> grid{{{1, 2}, {3, 4}, {5, 6}, {7, 8}},
-                            {{1, 2}, {3, 4}, {5, 6}, {7, 8}},
-                            {{1, 2}, {3, 4}, {5, 6}, {7, 8}},
-                            {{1, 2}, {3, 4}, {5, 6}, {7, 8}}};
+    grid::Grid<int, 3> grid3{{{1, 2}, {3, 4}, {5, 6}, {7, 8}},
+                             {{1, 2}, {3, 4}, {5, 6}, {7, 8}},
+                             {{1, 2}, {3, 4}, {5, 6}, {7, 8}},
+                             {{1, 2}, {3, 4}, {5, 6}, {7, 8}}};
 
-    grid::print2dSubgrid(grid, grid::NoDimension, grid::NoDimension, 0);
+    grid::printSubgrid(std::cout, grid3, grid::NoDimension, grid::NoDimension, 1);
+    std::cout << std::endl;
+
+    grid::Grid<int, 1> grid1{0, 1, 2, 3};
+    std::cout << grid1 << std::endl;
+
+    grid::Grid<int, 2> grid2{{0, 1}, {2, 3}, {4, 5}, {6, 7}};
+    std::cout << grid2 << std::endl;
 }

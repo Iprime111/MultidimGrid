@@ -17,7 +17,6 @@
 #include "traits.hpp"
 
 namespace grid {
-
 struct NoDimensionType {
     enum ConstructorToken_ { Token_ };
 
@@ -232,9 +231,20 @@ class Grid {
     }
 };
 
+namespace detail {
 template<typename T, std::size_t Dimensionality, Dimension... Dimensions, std::size_t... Is>
-void print2dSubgridImpl(const Grid<T, Dimensionality>& grid, std::index_sequence<Is...> dimIndices, Dimensions... dimensions) {
-    static_assert(utils::countEqualType<NoDimensionType>(dimensions...) == 2, "Invalid subgrid dimensions count");
+void printSubgridImpl(std::ostream &os, const Grid<T, Dimensionality>& grid, std::index_sequence<Is...> dimIndices, Dimensions... dimensions);
+}
+
+template<typename T, std::size_t Dimensionality, Dimension... Dimensions>
+void printSubgrid(std::ostream &os, const Grid<T, Dimensionality>& grid, Dimensions... dimensions) {
+    detail::printSubgridImpl(os, grid, std::make_index_sequence<sizeof...(Dimensions)>{}, dimensions...);
+}
+
+namespace detail {
+template<typename T, std::size_t Dimensionality, Dimension... Dimensions, std::size_t... Is>
+void printSubgridImpl(std::ostream &os, const Grid<T, Dimensionality>& grid, std::index_sequence<Is...> dimIndices, Dimensions... dimensions) {
+    static_assert(utils::countEqualType<NoDimensionType>(dimensions...) <= 2, "Invalid subgrid dimensions count");
 
     auto firstDim{std::numeric_limits<std::size_t>::max()};
     auto secondDim{std::numeric_limits<std::size_t>::max()};
@@ -249,20 +259,31 @@ void print2dSubgridImpl(const Grid<T, Dimensionality>& grid, std::index_sequence
         }
     }(dimensions, Is)), ...);
 
-    auto secondDimSize = grid.size(secondDim);
+    std::size_t secondDimSize = secondDim != std::numeric_limits<std::size_t>::max() ? grid.size(secondDim) : 0;
 
-    grid.reduce([secondDim, secondDimSize](const auto& val, const auto& coords) {
-        std::cout << val << " "; 
+    grid.reduce([secondDim, secondDimSize, &os](const auto& val, const auto& coords) {
+        os << val << " "; 
 
-        if (coords[secondDim] == secondDimSize - 1) {
-            std::cout << std::endl;
+        if (secondDim != std::numeric_limits<std::size_t>::max() && coords[secondDim] == secondDimSize - 1) {
+            os << std::endl;
         }
     }, dimensions...);
+
+    if (secondDim == std::numeric_limits<std::size_t>::max()) {
+        os << std::endl;
+    }
+}
+} // namespace detail
+
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const Grid<T, 1>& grid) {
+    printSubgrid(os, grid, NoDimension);
+    return os;
 }
 
-template<typename T, std::size_t Dimensionality, Dimension... Dimensions>
-void print2dSubgrid(const Grid<T, Dimensionality>& grid, Dimensions... dimensions) {
-    print2dSubgridImpl(grid, std::make_index_sequence<sizeof...(Dimensions)>{}, dimensions...);
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const Grid<T, 2>& grid) {
+    printSubgrid(os, grid, NoDimension, NoDimension);
+    return os;
 }
-
 } // namespace grid
