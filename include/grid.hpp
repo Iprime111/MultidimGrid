@@ -72,7 +72,7 @@ class Grid {
     explicit Grid() = delete;
 
     Grid(const Grid<T, Dimensionality>&) = default;
-    Grid(Grid<T, Dimensionality>&&) = default;
+    Grid(Grid<T, Dimensionality>&&) noexcept = default;
 
     Grid<T, Dimensionality>& operator=(const Grid<T, Dimensionality>&) = default;
     Grid<T, Dimensionality>& operator=(Grid<T, Dimensionality>&&) = default;
